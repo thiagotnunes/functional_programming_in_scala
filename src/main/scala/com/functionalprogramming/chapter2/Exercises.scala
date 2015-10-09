@@ -1,4 +1,4 @@
-package com.functionalprogramming.chapter1
+package com.functionalprogramming.chapter2
 
 class Exercises {
   def fib(n: Int): Int = {

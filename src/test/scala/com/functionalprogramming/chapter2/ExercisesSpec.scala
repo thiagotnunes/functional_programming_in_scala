@@ -1,4 +1,4 @@
-package com.functionalprogramming.chapter1
+package com.functionalprogramming.chapter2
 
 import org.specs2.mutable.Specification
 
