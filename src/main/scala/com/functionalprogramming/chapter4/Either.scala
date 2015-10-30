@@ -10,8 +10,6 @@ sealed trait Either[+E, +A] {
   def orElse[EE >: E, B >: A](b: Either[EE, B]): Either[EE, B]
 
   def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C]
-
-  def map2WithAccumulation[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[List[EE], C]
 }
 
 object Either {
@@ -53,13 +51,6 @@ case class Left[+E](value: E) extends Either[E, Nothing] {
 
   override def map2[EE >: E, B, C](b: Either[EE, B])(f: (Nothing, B) => C): Either[EE, C] = this
 
-  override def map2WithAccumulation[EE >: E, B, C](b: Either[EE, B])(f: (Nothing, B) => C): Either[List[EE], C] = {
-    b match {
-      case Left(bValue) => Left(List(value, bValue))
-      case Right(_) => Left(List(value))
-    }
-  }
-
   override def flatMap[EE >: E, B](f: (Nothing) => Either[EE, B]): Either[EE, B] = this
 
   override def orElse[EE >: E, B >: Nothing](b: Either[EE, B]): Either[EE, B] = b
@@ -69,13 +60,6 @@ case class Right[+A](value: A) extends Either[Nothing, A] {
   override def map[B](f: (A) => B): Either[Nothing, B] = Right(f(value))
 
   override def map2[EE >: Nothing, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] = b.map(bValue => f(value, bValue))
-
-  override def map2WithAccumulation[EE >: Nothing, B, C](b: Either[EE, B])(f: (A, B) => C): Either[List[EE], C] = {
-    b match {
-      case Right(bValue) => Right(f(value, bValue))
-      case Left(bValue) => Left(List(bValue))
-    }
-  }
 
   override def flatMap[EE >: Nothing, B](f: (A) => Either[EE, B]): Either[EE, B] = f(value)
 
