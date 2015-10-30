@@ -4,16 +4,22 @@ import scala.annotation.tailrec
 
 sealed trait Option[+A] {
   def map[B](f: A => B): Option[B]
+
   def flatMap[B](f: A => Option[B]): Option[B]
+
   def getOrElse[B >: A](default: => B): B
+
   def orElse[B >: A](ob: Option[B]): Option[B]
+
   def filter(f: A => Boolean): Option[A]
 }
 
 object Option {
   def Try[A](a: => A): Option[A] = {
     try Some(a)
-    catch { case e: Exception => None }
+    catch {
+      case e: Exception => None
+    }
   }
 
   def sequence[A](xs: List[Option[A]]): Option[List[A]] = {
@@ -39,6 +45,14 @@ object Option {
     }
 
     loop(a, Some(List()))
+  }
+
+  def map2[A, B, C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = {
+    (a, b) match {
+      case (Some(aGet), Some(bGet)) => Some(f(aGet, bGet))
+      case _ => None
+    }
+    //or a.flatMap(a => b.map(b => f(a, b)))
   }
 }
 
