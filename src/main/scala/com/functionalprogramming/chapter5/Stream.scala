@@ -4,16 +4,16 @@ import scala.annotation.tailrec
 
 sealed trait Stream[+A] {
   def headOption: Option[A] = this match {
-    case Empty => None
     case Cons(h, t) => Some(h())
+    case Empty => None
   }
 
   def toList: List[A] = {
     @tailrec
     def loop(stream: Stream[A], acc: List[A]): List[A] = {
       stream match {
-        case Empty => acc
         case Cons(head, tail) => loop(tail(), acc :+ head())
+        case Empty => acc
       }
     }
 
@@ -22,26 +22,23 @@ sealed trait Stream[+A] {
 
   def take(n: Int): Stream[A] = {
     this match {
-      case Empty => Empty
-      case _ if n == 0 => Empty
-      case Cons(head, tail) => Stream.cons(head(), tail().take(n - 1))
+      case Cons(head, tail) if n > 0 => Stream.cons(head(), tail().take(n - 1))
+      case _ => Empty
     }
   }
 
   @tailrec
   final def drop(n: Int): Stream[A] = {
     this match {
-      case Empty => Empty
-      case _ if n == 0 => this
-      case Cons(head, tail) => tail().drop(n - 1)
+      case Cons(head, tail) if n > 0 => tail().drop(n - 1)
+      case _ => this
     }
   }
 
   def takeWhile(p: A => Boolean): Stream[A] = {
     this match {
-      case Empty => Empty
       case Cons(head, tail) if p(head()) => Stream.cons(head(), tail().takeWhile(p))
-      case Cons(_, tail) => Empty
+      case _ => Empty
     }
   }
 
@@ -105,8 +102,8 @@ sealed trait Stream[+A] {
 
   def concat[AA >: A](stream: Stream[AA]): Stream[AA] = {
     this match {
-      case Empty => stream
       case Cons(head, tail) => Stream.cons(head(), tail().concat(stream))
+      case Empty => stream
     }
   }
 
@@ -116,8 +113,8 @@ sealed trait Stream[+A] {
 
   def mapViaUnfold[B](f: A => B): Stream[B] = {
     Stream.unfold(this) {
-      case Empty => None
       case Cons(head, tail) => Some(f(head()), tail())
+      case Empty => None
     }
   }
 
@@ -154,7 +151,6 @@ sealed trait Stream[+A] {
   }
 
   def startsWith[AA >: A](stream: Stream[AA]): Boolean = {
-    // Using unfold and exists
     !Stream.unfold((this, stream)) {
       case (Cons(aHead, aTail), Cons(bHead, bTail)) if aHead() == bHead() => Some(true, (aTail(), bTail()))
       case (Cons(aHead, aTail), Cons(bHead, bTail)) => Some(false, (aTail(), bTail()))
