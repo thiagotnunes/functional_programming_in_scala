@@ -61,19 +61,23 @@ object Par {
 
   // Exercise 7.4
   def asyncF[A, B](f: A => B): A => Par[B] = (a: A) => lazyUnit(f(a))
+  ////////////////
 
+  ////////////////
   // Exercise 7.5 -> Hard!
   def sequence[A](ps: List[Par[A]]): Par[List[A]] = {
     // first solution - (es: ExecutorService) => UnitFuture(ps.foldLeft(List[A]())((acc, par) => acc.+:(par(es).get)))
 
     ps.foldLeft(unit(List.empty[A]))((acc, par) => map2(acc, par)((as, a) => as.:+(a)))
   }
+  ////////////////
 
   def parMap[A, B](ps: List[A])(f: A => B): Par[List[B]] = fork {
     val fbs = ps.map(asyncF(f))
     sequence(fbs)
   }
 
+  ////////////////
   // Exercise 7.6 -> Hard!
   def parFilter[A](as: List[A])(f: A => Boolean): Par[List[A]] = fork {
     val s = sequence(as.map(asyncF((a: A) => {
@@ -86,7 +90,9 @@ object Par {
 
     map(s)(seq => seq.filter(_.isDefined).map(_.get))
   }
+  ////////////////
 
+  ////////////////
   // Extra exercises from section 7.3
   def fold[A](as: List[A])(z: A)(f: (A, A) => A): Par[A] = {
     if (as.length <= 1) {
@@ -113,4 +119,67 @@ object Par {
     //flatMap(pa)(a => flatMap(pb)(b => flatMap(pc)(c => map2(pd, pe)((d, e) => f(a, b, c, d, e)))))
     flatMap(pa)(a => map4(pb, pc, pd, pe)((b, c, d, e) => f(a, b, c, d, e)))
   }
+  ////////////////
+
+  ////////////////
+  // Exercise 7.11
+  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] = {
+    es => {
+      choices(run(es)(n).get)(es)
+    }
+  }
+
+  def choice[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] = {
+    val n = map(cond)(b => if (b) 0 else 1)
+    choiceN(n)(List(t, f))
+  }
+  ////////////////
+
+  ////////////////
+  // Exercise 7.12
+  def choiceMap[K, V](key: Par[K])(choices: Map[K, Par[V]]): Par[V] = {
+    es => {
+      choices(key(es).get)(es)
+    }
+  }
+  ////////////////
+
+  ////////////////
+  // Exercise 7.13
+  def chooser[A, B](a: Par[A])(choices: A => Par[B]): Par[B] = {
+    es => {
+      choices(a(es).get)(es)
+    }
+  }
+
+  def choiceViaChooser[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] = {
+    chooser(cond) { b => if (b) t else f }
+  }
+
+  def choiceNViaChooser[A](n: Par[Int])(choices: List[Par[A]]): Par[A] = {
+    chooser(n)(choices(_))
+  }
+  ////////////////
+
+  ////////////////
+  // Exercise 7.14
+  def join[A](a: Par[Par[A]]): Par[A] = {
+    es => {
+      a(es).get()(es)
+    }
+  }
+
+  def flatMapViaJoin[A, B](a: Par[A])(f: A => Par[B]): Par[B] = {
+    es => {
+      join(map(a)(f))(es)
+    }
+  }
+
+  def joinViaFlatMap[A](a: Par[Par[A]]): Par[A] = {
+    es => {
+      flatMap(a)(pa => unit(pa(es).get()))(es)
+    }
+  }
+  ////////////////
+
 }

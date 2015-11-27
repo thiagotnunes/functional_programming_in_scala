@@ -37,7 +37,6 @@ class ParSpec extends Specification {
     }
   }
 
-  // Not sure if the implementation for this one is correct
   "flatMap" >> {
     "does not execute any block" in {
       Par.flatMap(Par.lazyUnit(1))(a => Par.unit({sys.error("do not do it dude"); 2}))
