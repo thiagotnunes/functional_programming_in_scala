@@ -177,14 +177,14 @@ sealed trait Stream[+A] {
   }
 
   def scanRight[B](z: => B)(f: (A, => B) => B): Stream[B] = {
-    def loop(stream: Stream[A], z: => B, acc: Stream[B])(f: (A, => B) => B): Stream[B] = {
+    def loop(stream: Stream[A], z: => B, acc: Stream[B]): Stream[B] = {
       stream match {
-        case Cons(head, tail) => loop(tail(), f(head(), z), Stream.cons(z, acc))(f)
+        case Cons(head, tail) => loop(tail(), f(head(), z), Stream.cons(z, acc))
         case Empty => Stream.cons(z, acc)
       }
     }
 
-    loop(this.reverse, z, Empty)(f)
+    loop(this.reverse, z, Empty)
   }
 }
 
