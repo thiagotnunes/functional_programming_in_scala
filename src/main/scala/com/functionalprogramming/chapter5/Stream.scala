@@ -186,6 +186,22 @@ sealed trait Stream[+A] {
 
     loop(this.reverse, z, Empty)
   }
+
+  def zip[B](stream: Stream[B]): Stream[(A, B)] = {
+    Stream.unfold((this, stream)) {
+      case (Cons(aHead, aTail), Cons(bHead, bTail)) => Some((aHead(), bHead()), (aTail(), bTail()))
+      case _ => None
+    }
+  }
+
+  def map[B](f: A => B): Stream[B] = mapViaUnfold(f)
+
+  def find(f: A => Boolean): Option[A] = {
+    this match {
+      case Cons(head, tail) => if (f(head())) Some(head()) else tail().find(f)
+      case Empty => None
+    }
+  }
 }
 
 object Stream {

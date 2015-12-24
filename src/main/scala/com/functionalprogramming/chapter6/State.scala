@@ -28,7 +28,7 @@ object State {
   def unit[S, A](a: A): State[S, A] = State(s => (a, s))
 
   def sequence[S, A](fs: List[State[S, A]]): State[S, List[A]] = {
-    fs.foldLeft(unit[S, List[A]](List.empty[A]))((g, f) => g.map2(f)((a, b) => a :+ b))
+    fs.foldLeft(unit[S, List[A]](List.empty[A]))((s1, s2) => s1.map2(s2)((a, b) => a :+ b))
   }
 
   def get[S]: State[S, S] = State(s => (s, s))
