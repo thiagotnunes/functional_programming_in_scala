@@ -1,7 +1,5 @@
 package com.functionalprogramming.chapter8
 
-import com.functionalprogramming.chapter6.{RNG, State}
-
 class Exercises {
 
   /////////////////////////////////////////////
