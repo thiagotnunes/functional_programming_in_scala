@@ -1,7 +1,10 @@
 package com.functionalprogramming.chapter8
 
+import java.util.concurrent.Executors
+
 import com.functionalprogramming.chapter5.Stream
 import com.functionalprogramming.chapter6.{RNG, SimpleRNG}
+import com.functionalprogramming.chapter7.Par
 
 case class Prop(tag: Tag, run: (MaxSize, TestCases, RNG) => Result) {
   def &&(p: Prop): Prop = {
@@ -32,6 +35,27 @@ case class Prop(tag: Tag, run: (MaxSize, TestCases, RNG) => Result) {
 }
 
 object Prop {
+  private val S = Gen.weighted(
+    Gen.choose(1, 4).map(n => Executors.newFixedThreadPool(n)) -> .75,
+    Gen.unit(Executors.newCachedThreadPool) -> .25
+  )
+
+  def forAllPar[A](tag: Tag, g: Gen[A])(f: A => Par[Boolean]): Prop = {
+    forAll(tag, S ** g) { case s ** a => f(a)(s).get }
+  }
+
+  def equal[A](p: Par[A], p2: Par[A]): Par[Boolean] = {
+    Par.map2(p, p2)(_ == _)
+  }
+
+  def checkPar(p: => Par[Boolean]): Prop = Prop("", { (_, _, rng) =>
+    val p1 = Par.run(S.sample.run(rng)._1)(p).get()
+    if (p1)
+      Proved
+    else
+      Falsified("", "()", 0)
+  })
+
   def check(p: => Boolean): Prop = Prop("", { (_, _, _) =>
     if (p)
       Proved

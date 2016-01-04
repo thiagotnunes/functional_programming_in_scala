@@ -7,6 +7,14 @@ case class Gen[A](sample: State[RNG, A]) {
     Gen(sample.map(Some(_)))
   }
 
+  def map[B](f: A => B): Gen[B] = {
+    Gen(sample.map(a => f(a)))
+  }
+
+  def map2[B, C](g: Gen[B])(f: (A, B) => C): Gen[C] = {
+    Gen(sample.map2(g.sample)(f))
+  }
+
   def flatMap[B](f: A => Gen[B]): Gen[B] = {
     Gen(sample.flatMap(a => f(a).sample))
   }
@@ -16,10 +24,13 @@ case class Gen[A](sample: State[RNG, A]) {
   }
 
   def unsized: SGen[A] = SGen(_ => this)
+
+  def **[B](g: Gen[B]): Gen[(A, B)] = {
+    this.map2(g)((_, _))
+  }
 }
 
 object Gen {
-
   private def nextInt(rng: RNG, start: Int, stop: Int): (Int, RNG) = {
     val (a, newRng) = rng.nextInt
     if (a >= 0) {
@@ -89,4 +100,8 @@ object Gen {
 
     Gen(choose(0, weight1 + weight2).sample.flatMap(i => if (i < weight1) g1._1.sample else g2._1.sample))
   }
+}
+
+object ** {
+  def unapply[A, B](p: (A, B)) = Some(p)
 }
