@@ -1,6 +1,6 @@
 package com.functionalprogramming.chapter5
 
-import scala.annotation.tailrec
+import scala.annotation.tailrec;
 
 sealed trait Stream[+A] {
   def headOption: Option[A] = this match {

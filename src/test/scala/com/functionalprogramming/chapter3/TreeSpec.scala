@@ -2,7 +2,7 @@ package com.functionalprogramming.chapter3
 
 import org.specs2.mutable.Specification
 
-class TreesSpec extends Specification {
+class TreeSpec extends Specification {
 
   val trees = new Trees
 
