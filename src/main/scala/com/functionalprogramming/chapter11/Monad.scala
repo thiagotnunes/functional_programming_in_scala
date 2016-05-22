@@ -1,16 +1,17 @@
 package com.functionalprogramming.chapter11
 
+import com.functionalprogramming.chapter12.Applicative
 import com.functionalprogramming.chapter4.{None, Option, Some}
 import com.functionalprogramming.chapter5.{Empty, Stream, Cons => StreamCons}
 import com.functionalprogramming.chapter6.State
 import com.functionalprogramming.chapter7.Par
 
-trait Monad[F[_]] extends Functor[F] { self =>
+trait Monad[F[_]] extends Applicative[F] { self =>
   def unit[A](a: => A): F[A]
 
   def flatMap[A, B](ma: F[A])(f: A => F[B]): F[B]
 
-  def map[A, B](ma: F[A])(f: A => B): F[B] = {
+  override def map[A, B](ma: F[A])(f: A => B): F[B] = {
     flatMap(ma)(a => unit(f(a)))
   }
 
@@ -18,16 +19,16 @@ trait Monad[F[_]] extends Functor[F] { self =>
     flatMap(ma)(a => map(mb)(b => f(a, b)))
   }
 
-  def sequence[A](lma: List[F[A]]): F[List[A]] = {
+  def sequenceViaFoldRight[A](lma: List[F[A]]): F[List[A]] = {
     lma.foldRight(unit(List[A]()))((e, acc) => map2(e, acc)(_ :: _))
   }
 
-  def traverse[A, B](la: List[A])(f: A => F[B]): F[List[B]] = {
-    sequence(la.map(f))
+  def traverseViaSequence[A, B](la: List[A])(f: A => F[B]): F[List[B]] = {
+    sequenceViaFoldRight(la.map(f))
   }
 
-  def replicateM[A](n: Int, ma: F[A]): F[List[A]] = {
-    sequence(0.to(n).map(_ => ma).toList)
+  def replicateMViaSequence[A](n: Int, ma: F[A]): F[List[A]] = {
+    sequenceViaFoldRight(0.to(n).map(_ => ma).toList)
   }
 
   ///////////////////////
@@ -45,7 +46,7 @@ trait Monad[F[_]] extends Functor[F] { self =>
   //   - Some(List(a, ...)) when ma = Some(a)
   ///////////////////////
 
-  def product[A, B](ma: F[A], mb: F[B]): F[(A, B)] = map2(ma, mb)((_, _))
+  override def product[A, B](ma: F[A], mb: F[B]): F[(A, B)] = map2(ma, mb)((_, _))
 
   ///////////////////////
   // Exercises 11.6
@@ -177,7 +178,7 @@ object Monad {
   }
   ///////////////////////
 
-  def stateMonad[S] = new Monad[({type f[x] = State[S, x]})#f] {
+  implicit def stateMonad[S] = new Monad[({type f[x] = State[S, x]})#f] {
     override def unit[A](a: => A): State[S, A] = State(s => (a, s))
 
     override def flatMap[A, B](ma: State[S, A])(f: (A) => State[S, B]): State[S, B] = ma.flatMap(f)

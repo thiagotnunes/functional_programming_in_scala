@@ -1,12 +1,11 @@
 package com.functionalprogramming.chapter12
 
-import com.functionalprogramming.chapter11.Functor
-
+import com.functionalprogramming.chapter11.{Functor, Monad}
+import com.functionalprogramming.chapter4.{Either, Left, None, Option, Right, Some}
 
 trait ApplicativeMap2[F[_]] extends Functor[F] {
   self =>
-  // primitive combinators
-  def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C]
+  def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] =
 
   def unit[A](a: => A): F[A]
 
@@ -56,6 +55,20 @@ trait ApplicativeMap2[F[_]] extends Functor[F] {
         self.map2(fa, fb)(G.map2(_, _)(f))
       }
     }
+  }
+
+  // Exercise 12.12
+  def sequenceMap[K, V](ofa: Map[K, F[V]]): F[Map[K, V]] = {
+    ofa.foldRight(unit(Map.empty[K, V]))((entry, facc) => {
+      map2(entry._2, facc)((value, acc) => acc + ((entry._1, value)))
+    })
+  }
+
+  // Exercise 12.18
+  def fuse[G[_], H[_], A, B](fa: F[A])(f: A => G[B], g: A => H[B])
+                            (G: Applicative[G], H: Applicative[H]):
+                            (G[F[B]], H[F[B]]) = {
+    traverse[({type f[x] = (G[x], H[x])})#f, A, B](fa)(a => (f(a), g(a)))(G product H)
   }
 }
 
@@ -112,4 +125,45 @@ trait ApplicativeApply[F[_]] extends Functor[F] {
   }
 }
 
+object Applicative {
+  implicit val optionApplicative: ApplicativeMap2[Option] = new ApplicativeMap2[Option] {
+    override def unit[A](a: => A): Option[A] = {
+      Some(a)
+    }
 
+    override def map2[A, B, C](fa: Option[A], fb: Option[B])(f: (A, B) => C): Option[C] = {
+      (fa, fb) match {
+        case (Some(a), Some(b)) => Some(f(a, b))
+        case _ => None
+      }
+    }
+  }
+
+  implicit val streamApplicative: ApplicativeMap2[Stream] = new ApplicativeMap2[Stream] {
+    override def map2[A, B, C](fa: Stream[A], fb: Stream[B])(f: (A, B) => C): Stream[C] = {
+      fa.zip(fb).map(f.tupled)
+    }
+
+    override def unit[A](a: => A): Stream[A] = {
+      Stream.continually(a)
+    }
+
+    // Exercise 12.4
+    // Makes the list of streams streamable
+  }
+
+  implicit def eitherMonad[E]: Monad[({type f[x] = Either[E, x]})#f] = {
+    new Monad[({type f[x] = Either[E, x]})#f] {
+      override def unit[A](a: => A): Either[E, A] = {
+        Right(a)
+      }
+
+      override def flatMap[A, B](ma: Either[E, A])(f: (A) => Either[E, B]): Either[E, B] = {
+        ma match {
+          case Left(e) => Left(e)
+          case Right(a) => f(a)
+        }
+      }
+    }
+  }
+}

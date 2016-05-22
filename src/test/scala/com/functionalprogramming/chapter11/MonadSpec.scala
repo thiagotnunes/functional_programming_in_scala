@@ -8,7 +8,7 @@ class MonadSpec extends Specification {
     "replicateM" >> {
       "returns empty list when an empty list is given" in {
         import Monad.listMonad
-        listMonad.replicateM(10, List()) ==== List()
+        listMonad.replicateMViaSequence(10, List()) ==== List()
       }
     }
   }
